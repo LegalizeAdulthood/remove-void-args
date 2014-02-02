@@ -101,9 +101,10 @@ them for building:
 2. Unpack clang 3.4, you should have a directory named `clang-3.4`
 3. Unpack clang Compiler Runtime 3.4, you should have a directory named `compiler-rt-3.4`
 4. Unpack clang Tools Extra 3.4, you should have a directory named `clang-tools-extra-3.4`
-5. Move the `clang-3.4` directory to `llvm-3.4/tools/clang`
-6. Move the `compiler-rt-3.4` directory to `llvm-3.4/projects/compiler-rt`
-6. Move the `clang-tools-extra-3.4` directory to `llvm-3.4/tools/clang/tools/extra`
+5. Rename 'llvm-3.4' to 'llvm'
+6. Move the `clang-3.4` directory to `llvm/tools/clang`
+7. Move the `compiler-rt-3.4` directory to `llvm/projects/compiler-rt`
+8. Move the `clang-tools-extra-3.4` directory to `llvm/tools/clang/tools/extra`
 
 ### Building clang
 
@@ -113,7 +114,7 @@ Getting Started page: <http://clang.llvm.org/get_started.html> for
 your operating system with one difference -- since we have downloaded
 source packages, we don't need to checkout source code from subversion.
 
-1. Create a directory for build outputs called `build`, as a sibling of `llvm-3.4`
+1. Create a directory for build outputs called `build`, as a sibling of `llvm`
 2. `cd build`
 3. For Linux/Macintosh users: `../llvm/configure; make`
 4. For Windows users: `cmake -G "Visual Studio 11" ..\llvm` and then build
