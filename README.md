@@ -116,6 +116,9 @@ source packages, we don't need to checkout source code from subversion.
 
 1. Create a directory for build outputs called `build`, as a sibling of `llvm`
 2. `cd build`
-3. For Linux/Macintosh users: `../llvm/configure; make`
-4. For Windows users: `cmake -G "Visual Studio 11" ..\llvm` and then build
+3. For *Linux/Macintosh* users: `../llvm/configure; make`
+4. For *Windows* users: `cmake -G "Visual Studio 11" ..\llvm` and then build
 `LLVM.sln` from within Visual Studio 2012 or later.
+5. Now relax and have lunch or dinner.  Seriously, we are about to build
+a large codebase and even with a fast multicore machine and builds running
+in parallel it will take quite a bit of time to build everything.
