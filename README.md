@@ -6,7 +6,7 @@ Our example refactoring tool will remove needless `(void)` argument list to
 a function, method, or typedef.  Our refactoring tool will transform code
 like this:
 
-```
+```C++
 int foo(void) {
     return 0;
 }
@@ -33,7 +33,7 @@ gronk::gronk(void) {
 
 into this:
 
-```
+```C++
 int foo() {
     return 0;
 }
@@ -68,3 +68,7 @@ in C++:
 * declarations and definitions of pointers to methods
 
 ## Setting Up
+
+We'll base our tool on the clang 3.4 code base, so first get clang 3.4:
+
+* 
