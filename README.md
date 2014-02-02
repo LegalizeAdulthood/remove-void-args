@@ -7,66 +7,54 @@ a function, method, or typedef.  Our refactoring tool will transform code
 like this:
 
 ```
-int foo(void)
-{
+int foo(void) {
     return 0;
 }
 
-void bar(void)
-{
+void bar(void) {
 }
 
-class gronk
-{
+class gronk {
 public:
     void foo();
     void bar(void);
     gronk(void);
 };
 
-void gronk::foo()
-{
+void gronk::foo() {
 }
 
-void gronk::bar(void)
-{
+void gronk::bar(void) {
 }
 
-gronk::gronk(void)
-{
+gronk::gronk(void) {
 }
 ```
 
 into this:
 
 ```
-int foo()
-{
+int foo() {
     return 0;
 }
 
-void bar(void)
-{
+void bar() {
 }
 
-class gronk
-{
+class gronk {
 public:
     void foo();
     void bar();
     gronk();
 };
 
-void gronk::foo()
-{
+void gronk::foo() {
 }
 
-void gronk::bar()
-{
+void gronk::bar() {
 }
 
-gronk::gronk()
-{
+gronk::gronk() {
 }
 ```
 
