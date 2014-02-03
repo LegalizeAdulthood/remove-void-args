@@ -642,7 +642,7 @@ know how to extract the appropriate source text for matching.  Change
 the `run` method to the following:
 
 ```C++
-  virtual void run(const ast_matchers::MatchFinder::MatchResult &Result) {
+virtual void run(const ast_matchers::MatchFinder::MatchResult &Result) {
     BoundNodes Nodes = Result.Nodes;
     SourceManager const *SM = Result.SourceManager;
     if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
@@ -662,7 +662,7 @@ the `run` method to the following:
             }
         }
     }
-  }
+}
 ```
 
 Now that we can distinguish between a declaration and a definition,
@@ -678,3 +678,75 @@ Void Definition : test.cpp(5): int foo(void)
 
 You'll find this version of the code in directory [3](3).
 
+## Replacing Matched Function Declarations and Definitions
+
+OK, enough exploration, let's do some refactoring!  Once we've identified
+the source text we want to replace, we add a replacement to the replacements
+list given to the constructor of our callback class.  The replacement is
+the original text of the node, with `(void)` replaced by `()`.  Change
+the class `FixVoidArg` to the following:
+
+```C++
+class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
+ public:
+  FixVoidArg(tooling::Replacements *Replace)
+      : Replace(Replace) {}
+
+  virtual void run(const ast_matchers::MatchFinder::MatchResult &Result) {
+    BoundNodes Nodes = Result.Nodes;
+    SourceManager const *SM = Result.SourceManager;
+    if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
+        if (Function->isExternC()) {
+            return;
+        }
+        std::string const text = getText(*SM, *Function);
+        if (!Function->isThisDeclarationADefinition()) {
+            if (text.length() > 6 && text.substr(text.length()-6) == "(void)") {
+                std::string const noVoid = text.substr(0, text.length()-6) + "()";
+                Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
+            }
+        } else if (text.length() > 0) {
+            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
+            std::string decl = text.substr(0, end_of_decl);
+            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
+                std::string noVoid = decl.substr(0, decl.length()-6) + "()" + text.substr(end_of_decl + 1);
+                Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
+            }
+        }
+    }
+  }
+
+ private:
+  tooling::Replacements *Replace;
+};
+```
+
+Although not strictly necessary, you can also remove the includes of
+`<iostream>` and `<sstream>`, since we only needed them to print out
+some diagnostic information.
+
+Rebuild `remove-void-args` and run it on `test.cpp`, which is updated
+to the following contents:
+
+```C++
+#include <cstdio>
+
+int foo();
+
+int foo() {
+    return 0;
+}
+
+int bar() {
+    return 0;
+}
+
+int feezle(int i) {
+    return 0;
+}
+```
+
+We have successfully refactored a declaration and a definition, while
+leaving unrelated functions unchanged.
+
+You'll find this version of the code in directory [4](4).
