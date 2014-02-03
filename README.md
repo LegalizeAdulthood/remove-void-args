@@ -108,7 +108,7 @@ them for building:
 The clang compiler code base is designed to be bootstrapped using the
 native compiler to the system.  Follow the instructions on clang's
 Getting Started page: <http://clang.llvm.org/get_started.html> for
-your operating system with one difference -- since we have downloaded
+your operating system with one difference -- since we have downloaded`
 source packages, we don't need to checkout source code from subversion.
 
 1. Create a directory for build outputs called `build`, as a sibling of `llvm`
@@ -118,4 +118,48 @@ source packages, we don't need to checkout source code from subversion.
 `LLVM.sln` from within Visual Studio 2012 or later.
 5. Now relax and have lunch or dinner.  Seriously, we are about to build
 a large codebase and even with a fast multicore machine and builds running
-in parallel it will take quite a bit of time to build everything.
+in parallel it will take quite a bit of time to build everything.  While
+the code is building, you can continue reading to familiarize yourself
+with clang's `libtooling` that provides the support for refactoring tools.
+
+## Examining `remove-cstr-calls`
+
+Now let's take a look at the existing refactoring tool `remove-cstr-calls`
+on which we will base our refactoring tool.  This will give us an introduction
+to the library we're going to use to access the parsed C++ source file
+and associate replacement text with existing source text.
+
+Open up `llvm/tools/clang/tools/extra/remove-cstr-calls/RemoveCStrCalls.cpp`
+in your editor.  At the bottom of the file, you'll find the definition
+of `main` which begins with code like this:
+
+```C++
+int main(int argc, const char **argv) {
+  llvm::sys::PrintStackTraceOnErrorSignal();
+  llvm::OwningPtr<CompilationDatabase> Compilations(
+    tooling::FixedCompilationDatabase::loadFromCommandLine(argc, argv));
+  cl::ParseCommandLineOptions(argc, argv);
+  if (!Compilations) {
+    std::string ErrorMessage;
+    Compilations.reset(
+           CompilationDatabase::loadFromDirectory(BuildPath, ErrorMessage));
+    if (!Compilations)
+      llvm::report_fatal_error(ErrorMessage);
+    }
+  tooling::RefactoringTool Tool(*Compilations, SourcePaths);
+```
+
+* `PrintStackTraceOnErrorSignal` is a helper function that dumps the
+current stack trace if an unexpected signal occurs.
+* `CompilationDatabase` contains clang's abstraction of compile switches
+needed to properly compile a source file.  When refactoring C++ code, we
+need to know everything about how that source file will be compiled in
+order to know the proper definitions of all the text used in the source
+file.  Otherwise, we will not be able to properly identify a piece of
+text as a macro invocation, for instance.  We will look into the
+compilation database in more detail.
+* `cl::ParseCommandLineOptions` handles all the command-line options
+that we might need to specify regarding include paths and so-on.
+* `tooling::RefactoringTool` is the class in the tooling library that
+gives us the infrastructure for performing source-to-source transformations
+on source files and writing out the updated source file in place.
