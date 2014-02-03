@@ -1,10 +1,10 @@
-# remove-void-args
+# `remove-void-args`
 
 In this kata, we'll walk through the steps of implementing a refactoring
 tool for C++ written _in_ C++ using the libraries provided with clang.
-Our example refactoring tool will remove needless `(void)` argument list to
-a function, method, or typedef.  Our refactoring tool will transform code
-like this:
+Our example refactoring tool will replace `(void)` argument list with `()`.
+We'll apply this transformation to a function, method, or typedef.
+Our refactoring tool will transform code like this:
 
 ```C++
 int foo(void) {
@@ -308,3 +308,31 @@ written out.
 ```C++
   return Tool.runAndSave(newFrontendActionFactory(&Finder));
 ```
+
+## Bootstrapping `remove-void-args`
+
+If imitation is the sincerest form of flattery, then let us pay a supreme
+complient to the authors of `remove-cstr-calls` and begin by copying their
+entire implementation and changing the matchers.
+
+1. Make a copy of the directory `llvm/tools/clang/tools/extra/remove-cstr-calls`
+and name it `llvm/tools/clang/tools/extra/remove-void-args`.
+2. Rename `RemoveCStrCalls.cpp` to `RemoveVoidArgs.cpp`
+3. Edit `CMakeLists.txt` and:
+3.1 change `remove-cstr-calls` to `remove-void-args`
+3.2 change `RemoveCStrCalls.cpp` to `RemoveVoidArgs.cpp`
+4. Edit `Makefile` and change `remove-cstr-calls` to `remove-void-args`
+5. Edit `llvm/tools/clang/tools/extra/CMakeLists.txt` and add the line
+```
+add_subdirectory(remove-void-args)
+```
+after the line for `remove-cstr-calls`.
+6. Edit `llvm/tools/clang/tools/extra/Makefile` and add `remove-void-args`
+to the definition of `PARALLEL_DIRS` after the existing `remove-cstr-calls`.
+
+Now we have a copy of `remove-cstr-calls` under a new name, `remove-void-args`.
+Let's test that the build is creating our new refactoring tool:
+
+* On **Windows**, rerun CMake (`cmake -G "Visual Studio 11" ..\llvm`) and build `LLVM.sln`
+The LLVM solution should contain a project for your new refactoring tool.
+* On **Linux**, rerun configure (`../llvm/configure`) and build with `make`.
