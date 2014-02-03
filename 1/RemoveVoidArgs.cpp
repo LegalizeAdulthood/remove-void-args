@@ -106,16 +106,16 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
     BoundNodes Nodes = Result.Nodes;
     SourceManager const *SM = Result.SourceManager;
     if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
-        std::string const text = getText(*SM, *Function);
-        if (text.length() > 0) {
-            std::string::size_type open_brace = text.find_first_of('{');
-            if (open_brace == std::string::npos) {
+        std::string const Text = getText(*SM, *Function);
+        if (Text.length() > 0) {
+            std::string::size_type OpenBrace = Text.find_first_of('{');
+            if (OpenBrace == std::string::npos) {
                 return;
             }
-            std::string::size_type end_of_decl = text.find_last_of(')', open_brace) + 1;
-            std::string decl = text.substr(0, end_of_decl);
-            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
-                std::cout << "Void Definition : " << getLocation(SM, Function) << decl << "\n";
+            std::string::size_type EndOfDecl = Text.find_last_of(')', OpenBrace) + 1;
+            std::string Decl = Text.substr(0, EndOfDecl);
+            if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
+                std::cout << "Void Definition : " << getLocation(SM, Function) << Decl << "\n";
             }
         }
     }
@@ -123,14 +123,14 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
 
  private:
     std::string getLocation(SourceManager const *SM, FunctionDecl const* const Function) {
-        std::ostringstream location;
-        std::pair<FileID, unsigned> decomposed = SM->getDecomposedLoc(Function->getLocStart());
-        if (FileEntry const *entry = SM->getFileEntryForID(decomposed.first)) {
-            std::string fileName = entry->getName();
-            location << fileName.substr(fileName.find_last_of("\\/") + 1);
+        std::ostringstream Location;
+        std::pair<FileID, unsigned> Decomposed = SM->getDecomposedLoc(Function->getLocStart());
+        if (FileEntry const *Entry = SM->getFileEntryForID(Decomposed.first)) {
+            std::string FileName = Entry->getName();
+            Location << FileName.substr(FileName.find_last_of("\\/") + 1);
         }
-        location << "(" << SM->getLineNumber(decomposed.first, decomposed.second) << "): ";
-        return location.str();
+        Location << "(" << SM->getLineNumber(Decomposed.first, Decomposed.second) << "): ";
+        return Location.str();
     }
   tooling::Replacements *Replace;
 };

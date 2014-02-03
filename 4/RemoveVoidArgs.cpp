@@ -109,17 +109,17 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
         if (Function->isExternC()) {
             return;
         }
-        std::string const text = getText(*SM, *Function);
+        std::string const Text = getText(*SM, *Function);
         if (!Function->isThisDeclarationADefinition()) {
-            if (text.length() > 6 && text.substr(text.length()-6) == "(void)") {
-                std::string const noVoid = text.substr(0, text.length()-6) + "()";
+            if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
+                std::string const noVoid = Text.substr(0, Text.length()-6) + "()";
                 Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
             }
-        } else if (text.length() > 0) {
-            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
-            std::string decl = text.substr(0, end_of_decl);
-            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
-                std::string noVoid = decl.substr(0, decl.length()-6) + "()" + text.substr(end_of_decl);
+        } else if (Text.length() > 0) {
+            std::string::size_type EndOfDecl = Text.find_last_of(')', Text.find_first_of('{')) + 1;
+            std::string Decl = Text.substr(0, EndOfDecl);
+            if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
+                std::string noVoid = Decl.substr(0, Decl.length()-6) + "()" + Text.substr(EndOfDecl);
                 Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
             }
         }

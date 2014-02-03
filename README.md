@@ -512,16 +512,16 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
     BoundNodes Nodes = Result.Nodes;
     SourceManager const *SM = Result.SourceManager;
     if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
-        std::string const text = getText(*SM, *Function);
-        if (text.length() > 0) {
-            std::string::size_type open_brace = text.find_first_of('{');
-            if (open_brace == std::string::npos) {
+        std::string const Text = getText(*SM, *Function);
+        if (Text.length() > 0) {
+            std::string::size_type OpenBrace = Text.find_first_of('{');
+            if (OpenBrace == std::string::npos) {
                 return;
             }
-            std::string::size_type end_of_decl = text.find_last_of(')', open_brace) + 1;
-            std::string decl = text.substr(0, end_of_decl);
-            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
-                std::cout << "Void Definition : " << getLocation(SM, Function) << decl << "\n";
+            std::string::size_type EndOfDecl = Text.find_last_of(')', OpenBrace) + 1;
+            std::string Decl = Text.substr(0, EndOfDecl);
+            if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
+                std::cout << "Void Definition : " << getLocation(SM, Function) << Decl << "\n";
             }
         }
     }
@@ -649,16 +649,16 @@ virtual void run(const ast_matchers::MatchFinder::MatchResult &Result) {
         if (Function->isExternC()) {
             return;
         }
-        std::string const text = getText(*SM, *Function);
+        std::string const Text = getText(*SM, *Function);
         if (!Function->isThisDeclarationADefinition()) {
-            if (text.length() > 6 && text.substr(text.length()-6) == "(void)") {
-                std::cout << "Void Declaration: " << getLocation(SM, Function) << text << "\n";
+            if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
+                std::cout << "Void Declaration: " << getLocation(SM, Function) << Text << "\n";
             }
-        } else if (text.length() > 0) {
-            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
-            std::string decl = text.substr(0, end_of_decl);
-            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
-                std::cout << "Void Definition : " << getLocation(SM, Function) << decl << "\n";
+        } else if (Text.length() > 0) {
+            std::string::size_type EndOfDecl = Text.find_last_of(')', Text.find_first_of('{')) + 1;
+            std::string Decl = Text.substr(0, EndOfDecl);
+            if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
+                std::cout << "Void Definition : " << getLocation(SM, Function) << Decl << "\n";
             }
         }
     }
@@ -699,17 +699,17 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
         if (Function->isExternC()) {
             return;
         }
-        std::string const text = getText(*SM, *Function);
+        std::string const Text = getText(*SM, *Function);
         if (!Function->isThisDeclarationADefinition()) {
-            if (text.length() > 6 && text.substr(text.length()-6) == "(void)") {
-                std::string const noVoid = text.substr(0, text.length()-6) + "()";
+            if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
+                std::string const noVoid = Text.substr(0, Text.length()-6) + "()";
                 Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
             }
-        } else if (text.length() > 0) {
-            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
-            std::string decl = text.substr(0, end_of_decl);
-            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
-                std::string noVoid = decl.substr(0, decl.length()-6) + "()" + text.substr(end_of_decl + 1);
+        } else if (Text.length() > 0) {
+            std::string::size_type EndOfDecl = Text.find_last_of(')', Text.find_first_of('{')) + 1;
+            std::string Decl = Text.substr(0, EndOfDecl);
+            if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
+                std::string noVoid = Decl.substr(0, Decl.length()-6) + "()" + Text.substr(EndOfDecl);
                 Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
             }
         }
