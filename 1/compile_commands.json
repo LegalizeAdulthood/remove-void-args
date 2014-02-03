@@ -1,0 +1,7 @@
+[
+    {
+        "directory": "D:/Code/clang/github/test/llvm/tools/clang/tools/extra/remove-void-args",
+        "command": "CL.exe /c /I\"D:/Code/clang/github/test/llvm/tools/clang/tools/extra/remove-void-args\" \"D:/Code/clang/github/test/llvm/tools/clang/tools/extra/remove-void-args/test.cpp\"",
+        "file": "test.cpp",
+    }
+]

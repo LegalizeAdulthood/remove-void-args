@@ -496,6 +496,8 @@ top:
 Delete the functions `needParensAfterUnaryOperator` and `formatDereference`
 and the string constants `StringConstructor` and `StringCStrMethod`
 since they are used by `remove-cstr-calls`, but we won't need them.
+We'll keep the `getText` function since it will give us the source text
+associated with any matched node.
 
 Replace the class `FixCStrCall` with this class:
 
@@ -510,15 +512,8 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
     BoundNodes Nodes = Result.Nodes;
     SourceManager const *SM = Result.SourceManager;
     if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
-        if (Function->isExternC()) {
-            return;
-        }
         std::string const text = getText(*SM, *Function);
-        if (!Function->isThisDeclarationADefinition()) {
-            if (text.length() > 6 && text.substr(text.length()-6) == "(void)") {
-                std::cout << "Void Declaration: " << getLocation(SM, Function) << text << "\n";
-            }
-        } else if (text.length() > 0) {
+        if (text.length() > 0) {
             std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
             std::string decl = text.substr(0, end_of_decl);
             if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
@@ -549,3 +544,68 @@ Replace the `Callback` and matchers added with the following:
   FixVoidArg Callback(&Tool.getReplacements());
   Finder.addMatcher(functionDecl(parameterCountIs(0)).bind("fn"), &Callback);
 ````
+
+We're matching function declarations (and definitions) with zero arguments
+and binding them to the name *fn* for use by the callback.  The callback
+gets the source text for the function definition and uses a string matching
+heuristic to find the source text matching the argument list by looking for
+the first `{` and then the last `)` before that.
+
+Rebuild `remove-void-args` and run it on `test.cpp` again to see the results:
+
+```
+Void Definition : test.cpp(1): int foo(void)
+```
+
+You'll find this version of the code in directory [1](1).
+
+## Exploring A Realistic Source File
+
+Our test source file, `test.cpp`, isn't very realistic.  It doesn't include
+any headers, for instance.  Let's make it more realistic by adding the
+following line to the top of `test.cpp`:
+
+```C++
+#include <cstdio>
+```
+
+Now run `remove-void-args` again and see the results:
+
+```
+> remove-void-args . test.cpp
+warning: /c: 'linker' input unused
+warning: /ID:/Code/clang/github/test/llvm/tools/clang/tools/extra/remove-void-args: 'linker' input unused
+Void Definition : crtdefs.h(571): void __cdecl _invalid_parameter_noinfo(void)
+Void Definition : crtdefs.h(572): __declspec(noreturn) void __cdecl _invalid_parameter_noinfo_noreturn(void)
+Void Definition : stdio.h(129): FILE * __cdecl __iob_func(void)
+Void Definition : stdio.h(184): int __cdecl _fcloseall(void)
+Void Definition : stdio.h(196): int __cdecl _fgetchar(void)
+Void Definition : stdio.h(217): int __cdecl _flushall(void)
+Void Definition : stdio.h(255): int __cdecl getchar(void)
+Void Definition : stdio.h(256): int __cdecl _getmaxstdio(void)
+Void Definition : stdio.h(289): int __cdecl _rmtmp(void)
+Void Definition : stdio.h(302): unsigned int __cdecl _get_output_format(void)
+Void Definition : stdio.h(372): int __cdecl _get_printf_count_output(void)
+Void Definition : stdio.h(422): wint_t __cdecl _fgetwchar(void)
+Void Definition : stdio.h(426): wint_t __cdecl getwchar(void)
+Void Definition : test.cpp(3): int foo(void)
+```
+
+Uh oh, here's a wrinkle we hadn't anticipated.  C++'s backwards compatability
+with C is bringing in function signatures we didn't want to care about.  We
+could filter based on the source file name, but a better idea is to exclude
+anything that is declared with C linkage, i.e. declared `extern "C"`.  Add
+the following code in the callback just before the call to `getText`:
+
+```
+if (Function->isExternC()) {
+    return;
+}
+```
+
+Rebuild and run `remove-void-args` and you will now see the following
+results:
+
+```
+Void Definition : test.cpp(3): int foo(void)
+```
