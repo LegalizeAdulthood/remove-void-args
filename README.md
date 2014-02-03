@@ -1,6 +1,6 @@
 # `remove-void-args`
 
-In this kata, we'll walk through the steps of implementing a refactoring
+In this tutorial, we'll walk through the steps of implementing a refactoring
 tool for C++ written _in_ C++ using the libraries provided with clang.
 Our example refactoring tool will replace `(void)` argument list with `()`.
 We'll apply this transformation to a function, method, or typedef.
@@ -745,6 +745,8 @@ int feezle(int i) {
     return 0;
 }
 ```
+
+Congratulations!
 
 We have successfully refactored a declaration and a definition, while
 leaving unrelated functions unchanged.
