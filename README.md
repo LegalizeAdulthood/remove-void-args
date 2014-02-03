@@ -481,3 +481,71 @@ Skipping D:\Code\clang\llvm\tools\clang\tools\extra\remove-void-args\test.cpp. C
 Now we're ready to edit `RemoveVoidArgs.cpp` and start matching AST
 nodes and refactoring the source file.
 
+## Exploring Matched Function Declarations
+
+To get a feel for how all this works, let's add some simple code that
+matches a `FunctionDecl` and prints out information about the matched
+node.  Open `RemoveVoidArgs.cpp` and add the following includes at the
+top:
+
+```C++
+#include <iostream>
+#include <sstream>
+```
+
+Delete the functions `needParensAfterUnaryOperator` and `formatDereference`
+and the string constants `StringConstructor` and `StringCStrMethod`
+since they are used by `remove-cstr-calls`, but we won't need them.
+
+Replace the class `FixCStrCall` with this class:
+
+```C++
+namespace {
+class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
+ public:
+  FixVoidArg(tooling::Replacements *Replace)
+      : Replace(Replace) {}
+
+  virtual void run(const ast_matchers::MatchFinder::MatchResult &Result) {
+    BoundNodes Nodes = Result.Nodes;
+    SourceManager const *SM = Result.SourceManager;
+    if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
+        if (Function->isExternC()) {
+            return;
+        }
+        std::string const text = getText(*SM, *Function);
+        if (!Function->isThisDeclarationADefinition()) {
+            if (text.length() > 6 && text.substr(text.length()-6) == "(void)") {
+                std::cout << "Void Declaration: " << getLocation(SM, Function) << text << "\n";
+            }
+        } else if (text.length() > 0) {
+            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
+            std::string decl = text.substr(0, end_of_decl);
+            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
+                std::cout << "Void Definition : " << getLocation(SM, Function) << decl << "\n";
+            }
+        }
+    }
+  }
+
+ private:
+    std::string getLocation(SourceManager const *SM, FunctionDecl const* const Function) {
+        std::ostringstream location;
+        std::pair<FileID, unsigned> decomposed = SM->getDecomposedLoc(Function->getLocStart());
+        if (FileEntry const *entry = SM->getFileEntryForID(decomposed.first)) {
+            std::string fileName = entry->getName();
+            location << fileName.substr(fileName.find_last_of("\\/") + 1);
+        }
+        location << "(" << SM->getLineNumber(decomposed.first, decomposed.second) << "): ";
+        return location.str();
+    }
+  tooling::Replacements *Replace;
+};
+```
+
+Replace the `Callback` and matchers added with the following:
+
+```C++
+  FixVoidArg Callback(&Tool.getReplacements());
+  Finder.addMatcher(functionDecl(parameterCountIs(0)).bind("fn"), &Callback);
+````
