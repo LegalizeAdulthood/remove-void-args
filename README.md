@@ -323,10 +323,7 @@ and name it `llvm/tools/clang/tools/extra/remove-void-args`.
 3.2 change `RemoveCStrCalls.cpp` to `RemoveVoidArgs.cpp`
 4. Edit `Makefile` and change `remove-cstr-calls` to `remove-void-args`
 5. Edit `llvm/tools/clang/tools/extra/CMakeLists.txt` and add the line
-```
-add_subdirectory(remove-void-args)
-```
-after the line for `remove-cstr-calls`.
+`add_subdirectory(remove-void-args)` after the line for `remove-cstr-calls`.
 6. Edit `llvm/tools/clang/tools/extra/Makefile` and add `remove-void-args`
 to the definition of `PARALLEL_DIRS` after the existing `remove-cstr-calls`.
 
