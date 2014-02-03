@@ -333,3 +333,151 @@ Let's test that the build is creating our new refactoring tool:
 * On **Windows**, rerun CMake (`cmake -G "Visual Studio 11" ..\llvm`) and build `LLVM.sln`
 The LLVM solution should contain a project for your new refactoring tool.
 * On **Linux**, rerun configure (`../llvm/configure`) and build with `make`.
+
+## Understanding clang's AST
+
+Before we can start writing matchers for our `(void)` argument list,
+we need to understand the AST that clang builds for our source text.
+Fortunately for us, now that we've built clang, we can instruct it to
+dump the AST for a source file.
+
+Edit the new file `test.cpp` and insert the following text:
+
+```C++
+int foo(void) {
+    return 0;
+}
+
+int bar() {
+    return 0;
+}
+
+int feezle(int i) {
+    return 0;
+}
+```
+
+Then tell clang to dump the AST for us with `-ast-dump` to get:
+
+```
+> clang -Xclang -ast-dump -fsyntax-only dump.cpp
+TranslationUnitDecl 0x469850 <<invalid sloc>>
+|-TypedefDecl 0x469b40 <<invalid sloc>> __builtin_va_list 'char *'
+|-CXXRecordDecl 0x469b70 <<built-in>:28:1, col:7> class type_info
+|-FunctionDecl 0x469c60 <dump.cpp:1:1, line:3:1> foo 'int (void)'
+| `-CompoundStmt 0x469d00 <line:1:15, line:3:1>
+|   `-ReturnStmt 0x469cf0 <line:2:5, col:12>
+|     `-IntegerLiteral 0x469cd0 <col:12> 'int' 0
+|-FunctionDecl 0x469d40 <line:5:1, line:7:1> bar 'int (void)'
+| `-CompoundStmt 0x469de0 <line:5:11, line:7:1>
+|   `-ReturnStmt 0x469dd0 <line:6:5, col:12>
+|     `-IntegerLiteral 0x469db0 <col:12> 'int' 0
+`-FunctionDecl 0x469e90 <line:9:1, line:11:1> feezle 'int (int)'
+  |-ParmVarDecl 0x469e10 <line:9:12, col:16> i 'int'
+  `-CompoundStmt 0x469f38 <col:19, line:11:1>
+    `-ReturnStmt 0x469f28 <line:10:5, col:12>
+      `-IntegerLiteral 0x469f08 <col:12> 'int' 0
+```
+
+On your console, the output may be colored to indicate distinctions
+between `Decl` entries, `Stmt` entries, types, source file locations, etc.  
+The first thing you notice is that everything is inside a
+`TranslationUnitDecl`.
+The compilation and link model for C++ says that each source file
+corresponds to a distinct translation unit.
+Next we see a couple of internal declarations provided by clang and
+then three `FunctionDecl` entries for the functions we defined.
+Note that the first two `FunctionDecl` entries have no arguments and
+the third has a single `ParmVarDecl` for it's argument.
+
+Do you notice something odd about the two `FunctionDecl` entries?
+Only the `foo` function provided the `(void)` argument list, but
+both entries reported by `-ast-dump` list the `(void)` signature.
+Why is that?
+
+When clang creates the AST, it normalizes the representation so that two
+different ways of expressing the same fact in source code have a single
+representation in the AST.
+
+Does this mean we won't be able to distinguish `(void)` from `()` in
+our AST matching?  Fortunately, no, because we can access the source
+text associated with any particular AST node from inside the matcher.
+
+## The Compilation Database
+
+Remember that compilation database we mentioned in our discussion of
+`main`?  We need one of these in order to run our refactoring tool on
+a source file.  The database consists of a JSON file that provides the
+compilation command for each file.  On a unix system, CMake can generate
+the compilation database with the following command from the `build`
+directory:
+
+```
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS ../llvm
+```
+
+On a Windows system, we have to hack one together as the compile
+commands support in CMake only works on unix.
+
+Since we want to experiment with our tool on a single test file,
+we can just create one in a text editor.  Create a
+file called `compile_commands.json` with the following contents.
+
+For **Windows**:
+```JSON
+[
+    {
+        "directory": "D:/Code/clang/llvm/tools/clang/tools/extra/remove-void-args",
+        "command": "CL.exe /c /I\"D:/Code/clang/tools/clang/tools/extra/remove-void-args\" \"D:/Code/clang/llvm/tools/clang/tools/extra/remove-void-args/test.cpp\"",
+        "file": "test.cpp"
+    }
+]
+```
+
+The directories must be separated with slashes and not backslashes, so
+if you paste in a Windows path with backslashes, remember to replace them
+all with slashes.
+
+For **Linux**:
+```JSON
+[
+    {
+        "directory": "/Code/clang/llvm/tools/clang/tools/extra/remove-void-args",
+        "command": "g++ -c -I/Code/clang/tools/clang/tools/extra/remove-void-args /Code/clang/llvm/tools/clang/tools/extra/remove-void-args/test.cpp",
+        "file": "test.cpp"
+    }
+]
+```
+
+Adjust the contents of the file to match the corresponding location to
+your `remove-void-args` directory and the file `test.cpp`.
+
+Verify your `compile_commands.json` file is working correctly by running
+`remove-void-args`.  This is most easily done by having the `build/bin`
+directory (`build\bin\Debug` on **Windows**) in your path and making
+`llvm/tools/clang/tools/extra/remove-void-args` as your current directory.
+
+```
+> remove-void-args . test.cpp
+warning: /c: 'linker' input unused
+warning: /ID:/Code/clang/llvm/tools/clang/tools/extra/remove-void-args: 'linker' input unused
+```
+
+The warnings on **Windows** are harmless.  Since test.cpp doesn't contain
+any code matched by the `remove-cstr-calls` algorithm we copied, the
+contents of `test.cpp` remain unchanged.
+
+If you see this error message, it's because you didn't replace `\` with
+`/` in your `compile_commands.json` file.
+
+```
+> remove-void-args . dump.cpp
+YAML:6:6: error: Unrecognized escape code!
+    }
+     ^
+Skipping D:\Code\clang\llvm\tools\clang\tools\extra\remove-void-args\test.cpp. Command line not found.
+```
+
+Now we're ready to edit `RemoveVoidArgs.cpp` and start matching AST
+nodes and refactoring the source file.
+
