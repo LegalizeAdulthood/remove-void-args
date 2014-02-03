@@ -78,12 +78,12 @@ properly.
 We'll base our tool on the clang 3.4 code base, which comes as several
 source packages:
 
-* LLVM 3.4 <http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz>
-* clang 3.4 <http://llvm.org/releases/3.4/clang-3.4.src.tar.gz>
-* clang Tools Extra 3.4 <http://llvm.org/releases/3.4/clang-tools-extra-3.4.src.tar.gz>
+* [LLVM 3.4](http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz)
+* [clang 3.4](http://llvm.org/releases/3.4/clang-3.4.src.tar.gz)
+* [clang Tools Extra 3.4](http://llvm.org/releases/3.4/clang-tools-extra-3.4.src.tar.gz)
 
-Windows users will need `CMake` to prepare the source code for building.
-Get `CMake` from <http://www.cmake.org/cmake/resources/software.html>.
+Windows users will need [CMake](http://www.cmake.org/cmake/resources/software.html)
+to prepare the source code for building.
 
 LLVM is the underlying base technology for the intermediate represenation
 of code compiled by clang.  Clang is the ISO C++11 compliant compiler built
@@ -107,7 +107,7 @@ them for building:
 
 The clang compiler code base is designed to be bootstrapped using the
 native compiler to the system.  Follow the instructions on clang's
-Getting Started page: <http://clang.llvm.org/get_started.html> for
+[Getting Started page](http://clang.llvm.org/get_started.html) for
 your operating system with one difference -- since we have downloaded`
 source packages, we don't need to checkout source code from subversion.
 
@@ -229,8 +229,8 @@ replacements managed by the `RefactoringTool`.
 Next, the first matcher is added to `Finder`.  Matchers with the tooling
 library are specified using a builder style interface.  This allows the
 matchers to be expressive in the form of a fluent API.  A summary of the
-matcher API can be found in the AST Matchers Reference:
-<http://clang.llvm.org/docs/LibASTMatchersReference.html>
+matcher API can be found in the
+[AST Matchers Reference](http://clang.llvm.org/docs/LibASTMatchersReference.html)
 
 This matcher looks for invocations of a `std::string` constructor with
 two arguments where
@@ -269,8 +269,8 @@ the provide the fully qualified names of the constructor and `c_str` methods.
 ```
 
 The second matcher is specific to the clang codebase, which defines two
-string-like classes `StringRef` and `Twine` (see
-<http://llvm.org/docs/ProgrammersManual.html#passing-strings-the-stringref-and-twine-classes>).
+string-like classes
+[`StringRef` and `Twine`](http://llvm.org/docs/ProgrammersManual.html#passing-strings-the-stringref-and-twine-classes).
 The matching criteria is similar to that of the first matcher:
 
 ```C++
