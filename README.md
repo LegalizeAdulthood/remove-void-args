@@ -80,7 +80,6 @@ source packages:
 
 * LLVM 3.4 <http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz>
 * clang 3.4 <http://llvm.org/releases/3.4/clang-3.4.src.tar.gz>
-* clang Compiler Runtime 3.4: <http://llvm.org/releases/3.4/compiler-rt-3.4.src.tar.gz>
 * clang Tools Extra 3.4 <http://llvm.org/releases/3.4/clang-tools-extra-3.4.src.tar.gz>
 
 Windows users will need `CMake` to prepare the source code for building.
@@ -99,12 +98,10 @@ them for building:
 
 1. Unpack LLVM 3.4, you should have a directory named `llvm-3.4`
 2. Unpack clang 3.4, you should have a directory named `clang-3.4`
-3. Unpack clang Compiler Runtime 3.4, you should have a directory named `compiler-rt-3.4`
-4. Unpack clang Tools Extra 3.4, you should have a directory named `clang-tools-extra-3.4`
-5. Rename 'llvm-3.4' to 'llvm'
-6. Move the `clang-3.4` directory to `llvm/tools/clang`
-7. Move the `compiler-rt-3.4` directory to `llvm/projects/compiler-rt`
-8. Move the `clang-tools-extra-3.4` directory to `llvm/tools/clang/tools/extra`
+3. Unpack clang Tools Extra 3.4, you should have a directory named `clang-tools-extra-3.4`
+4. Rename 'llvm-3.4' to 'llvm'
+5. Move the `clang-3.4` directory to `llvm/tools/clang`
+6. Move the `clang-tools-extra-3.4` directory to `llvm/tools/clang/tools/extra`
 
 ### Building clang
 
