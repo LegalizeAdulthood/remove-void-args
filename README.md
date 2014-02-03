@@ -481,7 +481,7 @@ Skipping D:\Code\clang\llvm\tools\clang\tools\extra\remove-void-args\test.cpp. C
 Now we're ready to edit `RemoveVoidArgs.cpp` and start matching AST
 nodes and refactoring the source file.
 
-## Exploring Matched Function Declarations
+## Exploring Matched Function Definitions
 
 To get a feel for how all this works, let's add some simple code that
 matches a `FunctionDecl` and prints out information about the matched
@@ -514,7 +514,11 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
     if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
         std::string const text = getText(*SM, *Function);
         if (text.length() > 0) {
-            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
+            std::string::size_type open_brace = text.find_first_of('{');
+            if (open_brace == std::string::npos) {
+                return;
+            }
+            std::string::size_type end_of_decl = text.find_last_of(')', open_brace) + 1;
             std::string decl = text.substr(0, end_of_decl);
             if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
                 std::cout << "Void Definition : " << getLocation(SM, Function) << decl << "\n";
@@ -573,8 +577,6 @@ Now run `remove-void-args` again and see the results:
 
 ```
 > remove-void-args . test.cpp
-warning: /c: 'linker' input unused
-warning: /ID:/Code/clang/github/test/llvm/tools/clang/tools/extra/remove-void-args: 'linker' input unused
 Void Definition : crtdefs.h(571): void __cdecl _invalid_parameter_noinfo(void)
 Void Definition : crtdefs.h(572): __declspec(noreturn) void __cdecl _invalid_parameter_noinfo_noreturn(void)
 Void Definition : stdio.h(129): FILE * __cdecl __iob_func(void)
@@ -607,5 +609,72 @@ Rebuild and run `remove-void-args` and you will now see the following
 results:
 
 ```
+> remove-void-args . test.cpp
 Void Definition : test.cpp(3): int foo(void)
 ```
+
+You'll find this version of the code in directory [2](2).
+
+## Exploring Matched Function Declarations
+
+So far, we are only handling function definitions because our matching
+heuristic relies on the presence of an open brace, `{`, to identify
+the arguments in the source text.  Let's add a function declaration
+to our test file.  Add this declaration for `foo` before the definition
+of `foo`
+
+Let's add a function declaration to `test.cpp` by adding the following
+line:
+
+```C++
+int foo(void);
+```
+
+We run `remove-void-args` and get the following output:
+
+```
+Void Definition : test.cpp(5): int foo(void)
+```
+
+We need a way to distinguish between a function declaration, where no
+opening brace will be present, and a function definition, so that we'll
+know how to extract the appropriate source text for matching.  Change
+the `run` method to the following:
+
+```C++
+  virtual void run(const ast_matchers::MatchFinder::MatchResult &Result) {
+    BoundNodes Nodes = Result.Nodes;
+    SourceManager const *SM = Result.SourceManager;
+    if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
+        if (Function->isExternC()) {
+            return;
+        }
+        std::string const text = getText(*SM, *Function);
+        if (!Function->isThisDeclarationADefinition()) {
+            if (text.length() > 6 && text.substr(text.length()-6) == "(void)") {
+                std::cout << "Void Declaration: " << getLocation(SM, Function) << text << "\n";
+            }
+        } else if (text.length() > 0) {
+            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
+            std::string decl = text.substr(0, end_of_decl);
+            if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
+                std::cout << "Void Definition : " << getLocation(SM, Function) << decl << "\n";
+            }
+        }
+    }
+  }
+```
+
+Now that we can distinguish between a declaration and a definition,
+we don't need to guard against a missing open brace in the definition.
+Building `remove-void-args` and running it on `test.cpp` now yields the
+following output:
+
+```
+> remove-void-args . test.cpp
+Void Declaration: test.cpp(3): int foo(void)
+Void Definition : test.cpp(5): int foo(void)
+```
+
+You'll find this version of the code in directory [3](3).
+

@@ -111,7 +111,11 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
         }
         std::string const text = getText(*SM, *Function);
         if (text.length() > 0) {
-            std::string::size_type end_of_decl = text.find_last_of(')', text.find_first_of('{')) + 1;
+            std::string::size_type open_brace = text.find_first_of('{');
+            if (open_brace == std::string::npos) {
+                return;
+            }
+            std::string::size_type end_of_decl = text.find_last_of(')', open_brace) + 1;
             std::string decl = text.substr(0, end_of_decl);
             if (decl.length() > 6 && decl.substr(decl.length()-6) == "(void)") {
                 std::cout << "Void Definition : " << getLocation(SM, Function) << decl << "\n";
