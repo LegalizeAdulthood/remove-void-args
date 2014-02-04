@@ -112,16 +112,22 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
         std::string const Text = getText(*SM, *Function);
         if (!Function->isThisDeclarationADefinition()) {
             if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
-                std::string const NoVoid = Text.substr(0, Text.length()-6) + "()";
-                Replace->insert(Replacement(*Result.SourceManager, Function, NoVoid));
+                std::string const noVoid = Text.substr(0, Text.length()-6) + "()";
+                Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
             }
         } else if (Text.length() > 0) {
             std::string::size_type EndOfDecl = Text.find_last_of(')', Text.find_first_of('{')) + 1;
             std::string Decl = Text.substr(0, EndOfDecl);
             if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
-                std::string NoVoid = Decl.substr(0, Decl.length()-6) + "()" + Text.substr(EndOfDecl);
-                Replace->insert(Replacement(*Result.SourceManager, Function, NoVoid));
+                std::string noVoid = Decl.substr(0, Decl.length()-6) + "()" + Text.substr(EndOfDecl);
+                Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
             }
+        }
+    } else if (TypedefDecl const *const Typedef = Nodes.getNodeAs<TypedefDecl>("td")) {
+        std::string const Text = getText(*SM, *Typedef);
+        if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
+            std::string const noVoid = Text.substr(0, Text.length()-6) + "()";
+            Replace->insert(Replacement(*Result.SourceManager, Typedef, noVoid));
         }
     }
   }

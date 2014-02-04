@@ -502,7 +502,6 @@ associated with any matched node.
 Replace the class `FixCStrCall` with this class:
 
 ```C++
-namespace {
 class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
  public:
   FixVoidArg(tooling::Replacements *Replace)
@@ -702,15 +701,15 @@ class FixVoidArg : public ast_matchers::MatchFinder::MatchCallback {
         std::string const Text = getText(*SM, *Function);
         if (!Function->isThisDeclarationADefinition()) {
             if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
-                std::string const noVoid = Text.substr(0, Text.length()-6) + "()";
-                Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
+                std::string const NoVoid = Text.substr(0, Text.length()-6) + "()";
+                Replace->insert(Replacement(*Result.SourceManager, Function, NoVoid));
             }
         } else if (Text.length() > 0) {
             std::string::size_type EndOfDecl = Text.find_last_of(')', Text.find_first_of('{')) + 1;
             std::string Decl = Text.substr(0, EndOfDecl);
             if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
-                std::string noVoid = Decl.substr(0, Decl.length()-6) + "()" + Text.substr(EndOfDecl);
-                Replace->insert(Replacement(*Result.SourceManager, Function, noVoid));
+                std::string NoVoid = Decl.substr(0, Decl.length()-6) + "()" + Text.substr(EndOfDecl);
+                Replace->insert(Replacement(*Result.SourceManager, Function, NoVoid));
             }
         }
     }
@@ -752,3 +751,72 @@ We have successfully refactored a declaration and a definition, while
 leaving unrelated functions unchanged.
 
 You'll find this version of the code in directory [4](4).
+
+## Handling `typedef` Statements
+
+Now let's look at handling `typedef` statements.  Add the following code
+to the end of `test.cpp`:
+
+```C++
+typedef int int_function(void);
+
+typedef int (*int_function_ptr)(void);
+```
+
+Dump the syntax tree of the test file so we can see how clang treats a
+`typedef` statement:
+
+```
+TranslationUnitDecl 0xfdc910 <<invalid sloc>>
+...
+|-FunctionDecl 0x6b6a8d0 <line:13:1, line:15:1> feezle 'int (int)'
+| |-ParmVarDecl 0x6b6a870 <line:13:12, col:16> i 'int'
+| `-CompoundStmt 0x6b6a978 <col:19, line:15:1>
+|   `-ReturnStmt 0x6b6a968 <line:14:5, col:12>
+|     `-IntegerLiteral 0x6b6a948 <col:12> 'int' 0
+|-TypedefDecl 0x6b6ab30 <line:17:1, col:30> int_function 'int (void)'
+`-TypedefDecl 0x6b6ac20 <line:19:1, col:37> int_function_ptr 'int (*)(void)'
+```
+
+The `TypedefDecl` node in the AST represents the `typedef` statements
+that we added to our test file.  However, a quick perusal of the
+[AST Matchers Reference](http://clang.llvm.org/docs/LibASTMatchersReference.html)
+doesn't seem to provide any direct matcher for a `TypedefDecl` node.
+However, we can use the `namedDecl` matcher to match any named declaration,
+including a typedef.  We can then check in the callback to see if the
+result of `getAsNode<TypedefDecl>` returns a non-zero pointer to identify
+the named node as a `TypedefDecl`.
+
+Change the `run` method of the callback to:
+
+```C++
+  virtual void run(const ast_matchers::MatchFinder::MatchResult &Result) {
+    BoundNodes Nodes = Result.Nodes;
+    SourceManager const *SM = Result.SourceManager;
+    if (FunctionDecl const *const Function = Nodes.getNodeAs<FunctionDecl>("fn")) {
+        if (Function->isExternC()) {
+            return;
+        }
+        std::string const Text = getText(*SM, *Function);
+        if (!Function->isThisDeclarationADefinition()) {
+            if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
+                std::string const NoVoid = Text.substr(0, Text.length()-6) + "()";
+                Replace->insert(Replacement(*Result.SourceManager, Function, NoVoid));
+            }
+        } else if (Text.length() > 0) {
+            std::string::size_type EndOfDecl = Text.find_last_of(')', Text.find_first_of('{')) + 1;
+            std::string Decl = Text.substr(0, EndOfDecl);
+            if (Decl.length() > 6 && Decl.substr(Decl.length()-6) == "(void)") {
+                std::string NoVoid = Decl.substr(0, Decl.length()-6) + "()" + Text.substr(EndOfDecl);
+                Replace->insert(Replacement(*Result.SourceManager, Function, NoVoid));
+            }
+        }
+    } else if (TypedefDecl const *const Typedef = Nodes.getNodeAs<TypedefDecl>("td")) {
+        std::string const Text = getText(*SM, *Typedef);
+        if (Text.length() > 6 && Text.substr(Text.length()-6) == "(void)") {
+            std::string const NoVoid = Text.substr(0, Text.length()-6) + "()";
+            Replace->insert(Replacement(*Result.SourceManager, Typedef, NoVoid));
+        }
+    }
+  }
+```
