@@ -779,7 +779,7 @@ TranslationUnitDecl 0xfdc910 <<invalid sloc>>
 ```
 
 The `TypedefDecl` node in the AST represents the `typedef` statements
-that we added to our test file.  However, a quick perusal of the
+that we added to our test file.  A quick perusal of the
 [AST Matchers Reference](http://clang.llvm.org/docs/LibASTMatchersReference.html)
 doesn't seem to provide any direct matcher for a `TypedefDecl` node.
 However, we can use the `namedDecl` matcher to match any named declaration,

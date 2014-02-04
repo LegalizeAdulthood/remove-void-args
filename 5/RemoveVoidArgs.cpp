@@ -34,9 +34,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <iostream>
-#include <sstream>
-
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Basic/SourceManager.h"
