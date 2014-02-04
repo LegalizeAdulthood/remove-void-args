@@ -560,7 +560,7 @@ Rebuild `remove-void-args` and run it on `test.cpp` again to see the results:
 Void Definition : test.cpp(1): int foo(void)
 ```
 
-You'll find this version of the code in directory [1](1).
+You'll find this version of the code in [directory 1](1).
 
 ## Exploring A Realistic Source File
 
@@ -612,7 +612,7 @@ results:
 Void Definition : test.cpp(3): int foo(void)
 ```
 
-You'll find this version of the code in directory [2](2).
+You'll find this version of the code in [directory 2](2).
 
 ## Exploring Matched Function Declarations
 
@@ -675,7 +675,7 @@ Void Declaration: test.cpp(3): int foo(void)
 Void Definition : test.cpp(5): int foo(void)
 ```
 
-You'll find this version of the code in directory [3](3).
+You'll find this version of the code in [directory 3](3).
 
 ## Replacing Matched Function Declarations and Definitions
 
@@ -750,7 +750,7 @@ Congratulations!
 We have successfully refactored a declaration and a definition, while
 leaving unrelated functions unchanged.
 
-You'll find this version of the code in directory [4](4).
+You'll find this version of the code in [directory 4](4).
 
 ## Handling `typedef` Statements
 
@@ -854,7 +854,7 @@ typedef int (*int_function_ptr)();
 
 and we've added support for typedefs to `remove-void-args`.
 
-You'll find this version of the code in directory [5](5).
+You'll find this version of the code in [directory 5](5).
 
 ## Member Functions
 
@@ -912,4 +912,4 @@ void gronk::bar() {
 Great!  We're already handling method declarations and definitions via
 our matches to `FunctionDecl`.
 
-You'll find this version of the code in directory [6](6).
+You'll find this version of the code in [directory 6](6).
