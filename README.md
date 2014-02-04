@@ -853,3 +853,63 @@ typedef int (*int_function_ptr)();
 ```
 
 and we've added support for typedefs to `remove-void-args`.
+
+You'll find this version of the code in directory [5](5).
+
+## Member Functions
+
+So far, we've only looked at C style constructs: free functions and
+`typedef` statements.  Now let's see how well our tool handles member
+functions.  Add the following code to `test.cpp`:
+
+```C++
+class gronk {
+public:
+    gronk(void);
+    ~gronk(void);
+    void foo(void);
+    void bar();
+};
+
+gronk::gronk(void) {
+}
+
+gronk::~gronk(void) {
+}
+
+void gronk::foo(void) {
+}
+
+void gronk::bar() {
+}
+```
+
+Trying out `remove-void-args` on `test.cpp` to see how well we're doing
+with the existing code, we get:
+
+```C++
+class gronk {
+public:
+    gronk();
+    ~gronk();
+    void foo();
+    void bar();
+};
+
+gronk::gronk() {
+}
+
+gronk::~gronk() {
+}
+
+void gronk::foo() {
+}
+
+void gronk::bar() {
+}
+```
+
+Great!  We're already handling method declarations and definitions via
+our matches to `FunctionDecl`.
+
+You'll find this version of the code in directory [6](6).
