@@ -820,3 +820,36 @@ Change the `run` method of the callback to:
     }
   }
 ```
+
+Add a new matcher to `Finder`:
+
+```C++
+  Finder.addMatcher(namedDecl().bind("td"), &Callback);
+```
+
+Now when we run `remove-void-args . test.cpp`, the test file is transformed
+into:
+
+```C++
+#include <cstdio>
+
+int foo();
+
+int foo() {
+    return 0;
+}
+
+int bar() {
+    return 0;
+}
+
+int feezle(int i) {
+    return 0;
+}
+
+typedef int int_function();
+
+typedef int (*int_function_ptr)();
+```
+
+and we've added support for typedefs to `remove-void-args`.
